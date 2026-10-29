@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS Cloud URL Shortener | Acortador de Enlaces</title>
+  <meta name="description" content="Acortador de enlaces cloud de alta velocidad desplegado sobre Amazon S3, Amazon EC2 y Amazon DynamoDB. Generación UUID y redirección HTTP 307.">
+  <meta name="theme-color" content="#0d1117">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- Background Glow & Grid Canvas -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-grid"></div>
+
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">CloudLink<span class="brand-badge">AWS</span></span>
+          <span class="brand-subtitle">EC2 • DynamoDB • S3</span>
+        </div>
+      </div>
+
+      <!-- Live API Status Indicator -->
+      <div class="header-actions">
+        <div class="api-status-pill" id="api-status-pill">
+          <span class="status-dot" id="status-dot"></span>
+          <span class="status-label" id="status-label">Verificando API...</span>
+        </div>
+        <button class="btn-config" id="btn-toggle-config" title="Configurar Endpoint de la API">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span class="btn-text">API Host</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Modal / Drawer for API Endpoint Configuration -->
+    <div class="config-drawer hidden" id="config-drawer">
+      <div class="config-content">
+        <div class="config-header">
+          <h3>Dirección del Backend (EC2)</h3>
+          <button class="btn-close" id="btn-close-config">&times;</button>
+        </div>
+        <p class="config-desc">
+          Indica la IP pública de tu instancia Amazon EC2 para conectar el frontend con la API de FastAPI:
+        </p>
+        <div class="config-input-group">
+          <input type="text" id="input-api-url" placeholder="http://<IP_PUBLICA_EC2>:8000" spellcheck="false">
+          <button class="btn btn-secondary" id="btn-save-api">Guardar</button>
+        </div>
+        <div class="config-presets">
+          <span class="preset-label">Preajustes rápidos:</span>
+          <button class="chip" id="chip-localhost">localhost:8000</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="main-content">
+      <!-- Hero Header -->
+      <section class="hero-section">
+        <div class="hero-chip">
+          <span class="hero-chip-icon">⚡</span>
+          <span>Desarrollado con FastAPI & AWS SDK (Boto3)</span>
+        </div>
+        <h1 class="hero-title">
+          Acortador de Enlaces <span class="gradient-text">Cloud Nativo</span>
+        </h1>
+        <p class="hero-description">
+          Registra tus URLs largas, genera identificadores únicos con <strong>UUID v4</strong>, persiste los datos en <strong>Amazon DynamoDB</strong> y redirige en tiempo real con <strong>HTTP 307</strong> vía <strong>Amazon EC2</strong>.
+        </p>
+      </section>
+
+      <!-- Navigation Tabs -->
+      <div class="nav-tabs" role="tablist">
+        <button class="tab-button active" id="tab-shorten" role="tab" aria-selected="true" aria-controls="view-shorten">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+          <span>Acortar URL (Endpoint 1)</span>
+        </button>
+        <button class="tab-button" id="tab-inspect" role="tab" aria-selected="false" aria-controls="view-inspect">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Consultar por UUID (Endpoint 3)</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Shorten URL View -->
+      <div class="tab-pane active" id="view-shorten" role="tabpanel">
+        <div class="card glass-card">
+          <form id="shorten-form" class="shorten-form" novalidate>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></line>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </span>
+              <input
+                type="url"
+                id="url-input"
+                class="form-input"
+                placeholder="Ingresa la URL original (ej. https://ejemplo.com/articulo-nube)"
+                required
+                autocomplete="off"
+                spellcheck="false"
+              >
+              <button type="button" class="btn-clear hidden" id="btn-clear-url" title="Limpiar">&times;</button>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btn-submit-shorten">
+              <span class="btn-text">Acortar Enlace</span>
+              <span class="spinner hidden" id="spinner-shorten"></span>
+            </button>
+          </form>
+
+          <!-- Error Alert Banner -->
+          <div class="alert-banner alert-error hidden" id="shorten-error" role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="alert-content">
+              <strong id="shorten-error-title">Error al procesar URL</strong>
+              <span id="shorten-error-msg">Por favor verifica la dirección ingresada.</span>
+            </div>
+            <button class="alert-dismiss" id="dismiss-shorten-error">&times;</button>
+          </div>
+
+          <!-- Result Box -->
+          <div class="result-container hidden" id="result-container">
+            <div class="result-header">
+              <span class="badge-success">¡Enlace Generado en DynamoDB!</span>
+              <span class="result-hint">UUID generado en backend</span>
+            </div>
+
+            <!-- Short URL presentation -->
+            <div class="result-field">
+              <label for="result-short-url">Enlace Corto (Redirección HTTP 307):</label>
+              <div class="copy-box">
+                <input type="text" id="result-short-url" readonly spellcheck="false">
+                <button class="btn btn-copy" id="btn-copy-url" title="Copiar enlace al portapapeles">
+                  <svg class="copy-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span class="copy-text">Copiar</span>
+                </button>
+                <a href="#" target="_blank" class="btn btn-open" id="btn-open-url" title="Abrir y probar redirección">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                  <span>Probar</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Metadata Info Pill -->
+            <div class="metadata-grid">
+              <div class="metadata-card">
+                <span class="meta-label">Clave de Partición (UUID):</span>
+                <span class="meta-value code-font" id="result-uuid">-</span>
+              </div>
+              <div class="metadata-card">
+                <span class="meta-label">Destino Original:</span>
+                <span class="meta-value truncate" id="result-original-url">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Inspect UUID View (Endpoint 3: GET /urls/{short_code}) -->
+      <div class="tab-pane hidden" id="view-inspect" role="tabpanel">
+        <div class="card glass-card">
+          <div class="section-intro">
+            <h3>Consultar Registro en Amazon DynamoDB</h3>
+            <p>Ejecuta una consulta contra el endpoint <code>GET /urls/{short_code}</code> para inspeccionar los datos almacenados en DynamoDB.</p>
+          </div>
+
+          <form id="inspect-form" class="shorten-form" novalidate>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"></path>
+                </svg>
+              </span>
+              <input
+                type="text"
+                id="inspect-input"
+                class="form-input code-font"
+                placeholder="Ingresa el UUID (ej. 550e8400-e29b-41d4-a716-446655440000)"
+                required
+                autocomplete="off"
+                spellcheck="false"
+              >
+            </div>
+
+            <button type="submit" class="btn btn-secondary" id="btn-submit-inspect">
+              <span class="btn-text">Consultar DynamoDB</span>
+              <span class="spinner hidden" id="spinner-inspect"></span>
+            </button>
+          </form>
+
+          <!-- Inspect Error Alert -->
+          <div class="alert-banner alert-error hidden" id="inspect-error" role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="alert-content">
+              <strong id="inspect-error-title">No encontrado</strong>
+              <span id="inspect-error-msg">El UUID especificado no existe en la tabla DynamoDB.</span>
+            </div>
+            <button class="alert-dismiss" id="dismiss-inspect-error">&times;</button>
+          </div>
+
+          <!-- JSON Response Display -->
+          <div class="inspect-result hidden" id="inspect-result">
+            <div class="result-header">
+              <span class="badge-success">Registro Recuperado de DynamoDB</span>
+              <span class="result-hint">Respuesta JSON HTTP 200</span>
+            </div>
+            <pre class="json-viewer" id="inspect-json-display"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Shortened Links History -->
+      <section class="history-section" id="history-section">
+        <div class="history-header">
+          <div class="history-title-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <h2>Historial de Enlaces Creados</h2>
+          </div>
+          <button class="btn-text-action" id="btn-clear-history">Limpiar historial</button>
+        </div>
+
+        <div class="history-list" id="history-list">
+          <div class="history-empty" id="history-empty">
+            <p>Aún no has generado enlaces. Ingresa una URL arriba para comenzar.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- AWS Architecture Overview Cards -->
+      <section class="architecture-section">
+        <h2 class="section-title">Arquitectura en AWS</h2>
+        <div class="arch-cards">
+          <article class="arch-card">
+            <div class="arch-icon s3-color">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <h3>Amazon S3</h3>
+            <p>Aloja los archivos estáticos (HTML5, CSS3, JS) mediante Static Website Hosting, con alta disponibilidad.</p>
+            <span class="arch-tag">Frontend Estático</span>
+          </article>
+
+          <article class="arch-card">
+            <div class="arch-icon ec2-color">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </div>
+            <h3>Amazon EC2</h3>
+            <p>Instancia Linux que ejecuta la API REST con FastAPI y Uvicorn administrada con servicio systemd.</p>
+            <span class="arch-tag">Backend FastAPI</span>
+          </article>
+
+          <article class="arch-card">
+            <div class="arch-icon ddb-color">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+              </svg>
+            </div>
+            <h3>Amazon DynamoDB</h3>
+            <p>Base de datos NoSQL serverless con clave de partición UUID (<code>short_code</code>) para latencia en milisegundos.</p>
+            <span class="arch-tag">Persistencia NoSQL</span>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>Evaluación Parcial: Desarrollo y Despliegue en la Nube (AWS) • Acortador de Enlaces</p>
+        <p class="footer-sub">Arquitectura Integrada: S3 + EC2 + DynamoDB + IAM Role</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
