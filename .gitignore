@@ -10,6 +10,8 @@ ENV/
 env.bak/
 venv.bak/
 .venv/
+llave/
+docs/
 
 # Environment Variables
 .env
